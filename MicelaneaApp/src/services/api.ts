@@ -1,4 +1,4 @@
-import axios, { AxiosInstance } from 'axios';
+import axios, { AxiosInstance } from "axios";
 import {
   Usuario,
   Producto,
@@ -6,9 +6,9 @@ import {
   Descuento,
   LoginCredentials,
   VentaRequest,
-} from '../types';
+} from "../types";
 
-const API_URL = 'http://localhost:3000/api';
+const API_URL = "http://localhost:3000/api";
 
 class ApiService {
   private api: AxiosInstance;
@@ -18,12 +18,12 @@ class ApiService {
       baseURL: API_URL,
       timeout: 10000,
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
     });
 
     this.api.interceptors.request.use((config) => {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem("token");
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
       }
@@ -32,33 +32,41 @@ class ApiService {
   }
 
   setToken(token: string) {
-    localStorage.setItem('token', token);
+    localStorage.setItem("token", token);
   }
 
   clearToken() {
-    localStorage.removeItem('token');
+    localStorage.removeItem("token");
   }
 
   // Auth
-  async login(credentials: LoginCredentials): Promise<{ token: string; usuario: Usuario }> {
-    const response = await this.api.post('/auth/login', credentials);
+  async login(
+    credentials: LoginCredentials,
+  ): Promise<{ token: string; usuario: Usuario }> {
+    const response = await this.api.post("/auth/login", credentials);
     return response.data;
   }
 
   async getCurrentUser(): Promise<Usuario> {
-    const response = await this.api.get('/auth/me');
+    const response = await this.api.get("/auth/me");
     return response.data;
   }
 
   // Productos
   async getProductos(): Promise<Producto[]> {
-    const response = await this.api.get('/productos');
-    return response.data;
+    const response = await this.api.get("/productos");
+    return response.data.map((p: any) => ({
+      ...p,
+      precio: Number(p.precio),
+    }));
   }
 
   async getProductoByCodigo(codigo: string): Promise<Producto | null> {
     try {
       const response = await this.api.get(`/productos/codigo/${codigo}`);
+      if (response.data) {
+        response.data.precio = Number(response.data.precio);
+      }
       return response.data;
     } catch {
       return null;
@@ -67,15 +75,19 @@ class ApiService {
 
   async getProducto(id: number): Promise<Producto> {
     const response = await this.api.get(`/productos/${id}`);
+    response.data.precio = Number(response.data.precio);
     return response.data;
   }
 
   async createProducto(producto: Partial<Producto>): Promise<Producto> {
-    const response = await this.api.post('/productos', producto);
+    const response = await this.api.post("/productos", producto);
     return response.data;
   }
 
-  async updateProducto(id: number, producto: Partial<Producto>): Promise<Producto> {
+  async updateProducto(
+    id: number,
+    producto: Partial<Producto>,
+  ): Promise<Producto> {
     const response = await this.api.put(`/productos/${id}`, producto);
     return response.data;
   }
@@ -86,17 +98,20 @@ class ApiService {
 
   async searchProductos(query: string): Promise<Producto[]> {
     const response = await this.api.get(`/productos/buscar?q=${query}`);
-    return response.data;
+    return response.data.map((p: any) => ({
+      ...p,
+      precio: Number(p.precio),
+    }));
   }
 
   // Ventas
   async createVenta(venta: VentaRequest): Promise<Venta> {
-    const response = await this.api.post('/ventas', venta);
+    const response = await this.api.post("/ventas", venta);
     return response.data;
   }
 
   async getVentas(fecha?: string): Promise<Venta[]> {
-    const params = fecha ? `?fecha=${fecha}` : '';
+    const params = fecha ? `?fecha=${fecha}` : "";
     const response = await this.api.get(`/ventas${params}`);
     return response.data;
   }
@@ -112,30 +127,35 @@ class ApiService {
   }
 
   // Reportes
-  async getReporteVentas(fechaInicio: string, fechaFin: string): Promise<{
+  async getReporteVentas(
+    fechaInicio: string,
+    fechaFin: string,
+  ): Promise<{
     total_ventas: number;
     total_productos: number;
     promedio_venta: number;
     ventas: Venta[];
   }> {
-    const response = await this.api.get(`/reportes/ventas?inicio=${fechaInicio}&fin=${fechaFin}`);
+    const response = await this.api.get(
+      `/reportes/ventas?inicio=${fechaInicio}&fin=${fechaFin}`,
+    );
     return response.data;
   }
 
   async getVentasHoy(): Promise<Venta[]> {
-    const response = await this.api.get('/reportes/hoy');
+    const response = await this.api.get("/reportes/hoy");
     return response.data;
   }
 
   // Descuentos
   async getDescuentos(): Promise<Descuento[]> {
-    const response = await this.api.get('/descuentos');
+    const response = await this.api.get("/descuentos");
     return response.data;
   }
 
   async aplicarDescuento(codigo: string): Promise<Descuento | null> {
     try {
-      const response = await this.api.post('/descuentos/aplicar', { codigo });
+      const response = await this.api.post("/descuentos/aplicar", { codigo });
       return response.data;
     } catch {
       return null;
