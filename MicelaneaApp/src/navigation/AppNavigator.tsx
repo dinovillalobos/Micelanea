@@ -1,4 +1,5 @@
 import React from 'react';
+import { View, Text, StyleSheet } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -13,16 +14,36 @@ import LoginScreen from '../screens/LoginScreen';
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
 
+function TabIcon({ name, focused }: { name: string; focused: boolean }) {
+  return (
+    <View style={styles.iconContainer}>
+      <MaterialCommunityIcons
+        name={name as any}
+        size={24}
+        color={focused ? '#00f0ff' : '#666'}
+      />
+      {focused && <View style={styles.glowDot} />}
+    </View>
+  );
+}
+
 function TabNavigator() {
   return (
     <Tab.Navigator
       screenOptions={{
-        tabBarActiveTintColor: '#2196F3',
-        tabBarInactiveTintColor: '#999',
+        tabBarActiveTintColor: '#00f0ff',
+        tabBarInactiveTintColor: '#666',
         tabBarStyle: {
-          height: 60,
+          height: 65,
           paddingBottom: 8,
           paddingTop: 8,
+          backgroundColor: '#0a0a0f',
+          borderTopWidth: 1,
+          borderTopColor: '#00f0ff',
+        },
+        tabBarLabelStyle: {
+          fontSize: 10,
+          letterSpacing: 2,
         },
         headerShown: false,
       }}
@@ -31,30 +52,24 @@ function TabNavigator() {
         name="Caja"
         component={CajaScreen}
         options={{
-          tabBarLabel: 'Caja',
-          tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="cash-register" color={color} size={size} />
-          ),
+          tabBarLabel: 'CAJA',
+          tabBarIcon: ({ focused }) => <TabIcon name="cash-register" focused={focused} />,
         }}
       />
       <Tab.Screen
         name="Inventario"
         component={InventarioScreen}
         options={{
-          tabBarLabel: 'Inventario',
-          tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="package-variant" color={color} size={size} />
-          ),
+          tabBarLabel: 'INVENTARIO',
+          tabBarIcon: ({ focused }) => <TabIcon name="package-variant" focused={focused} />,
         }}
       />
       <Tab.Screen
         name="Reportes"
         component={ReportesScreen}
         options={{
-          tabBarLabel: 'Reportes',
-          tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="chart-bar" color={color} size={size} />
-          ),
+          tabBarLabel: 'REPORTES',
+          tabBarIcon: ({ focused }) => <TabIcon name="chart-bar" focused={focused} />,
         }}
       />
     </Tab.Navigator>
@@ -65,7 +80,11 @@ export default function AppNavigator() {
   const { isAuthenticated, isLoading } = useAuth();
 
   if (isLoading) {
-    return null;
+    return (
+      <View style={styles.loadingContainer}>
+        <Text style={styles.loadingText}>◈ CARGANDO ◈</Text>
+      </View>
+    );
   }
 
   return (
@@ -80,9 +99,10 @@ export default function AppNavigator() {
             component={NuevoProductoScreen}
             options={{
               headerShown: true,
-              title: 'Nuevo Producto',
-              headerStyle: { backgroundColor: '#fff' },
-              headerTintColor: '#2196F3',
+              title: '// NUEVO PRODUCTO',
+              headerStyle: { backgroundColor: '#0a0a0f' },
+              headerTintColor: '#00f0ff',
+              headerTitleStyle: { letterSpacing: 2 },
             }}
           />
         </>
@@ -90,3 +110,36 @@ export default function AppNavigator() {
     </Stack.Navigator>
   );
 }
+
+const styles = StyleSheet.create({
+  iconContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  glowDot: {
+    position: 'absolute',
+    bottom: -4,
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#00f0ff',
+    shadowColor: '#00f0ff',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 1,
+    shadowRadius: 5,
+  },
+  loadingContainer: {
+    flex: 1,
+    backgroundColor: '#0a0a0f',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    color: '#00f0ff',
+    fontSize: 18,
+    letterSpacing: 4,
+    textShadowColor: '#00f0ff',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 10,
+  },
+});

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, StyleSheet, FlatList, Alert, RefreshControl } from 'react-native';
+import { View, StyleSheet, FlatList, Alert, RefreshControl, StatusBar } from 'react-native';
 import { Text, Surface, FAB, Searchbar, IconButton, Menu, Divider, Portal, Modal, TextInput, Button } from 'react-native-paper';
+import { LinearGradient } from 'expo-linear-gradient';
 import apiService from '../services/api';
 import { Producto } from '../types';
 
@@ -31,7 +32,7 @@ export default function InventarioScreen({ navigation }: InventarioScreenProps) 
       setProductos(data);
       setFilteredProductos(data);
     } catch (error) {
-      Alert.alert('Error', 'No se pudieron cargar los productos');
+      Alert.alert('ERROR', 'No se pudieron cargar los productos');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -75,7 +76,6 @@ export default function InventarioScreen({ navigation }: InventarioScreenProps) 
 
   const handleSaveEdit = async () => {
     if (!selectedProduct) return;
-
     try {
       await apiService.updateProducto(selectedProduct.id, {
         nombre: editForm.nombre,
@@ -84,29 +84,29 @@ export default function InventarioScreen({ navigation }: InventarioScreenProps) 
         cantidad: parseInt(editForm.cantidad),
         categoria: editForm.categoria,
       });
-      Alert.alert('Éxito', 'Producto actualizado');
+      Alert.alert('✓ ÉXITO', 'Producto actualizado');
       setEditModalVisible(false);
       loadProductos();
     } catch (error) {
-      Alert.alert('Error', 'No se pudo actualizar el producto');
+      Alert.alert('ERROR', 'No se pudo actualizar');
     }
   };
 
   const handleDelete = (producto: Producto) => {
     Alert.alert(
-      'Eliminar producto',
-      `¿Está seguro de eliminar "${producto.nombre}"?`,
+      '⚠ ELIMINAR PRODUCTO',
+      `¿Eliminar "${producto.nombre}"?`,
       [
-        { text: 'Cancelar', style: 'cancel' },
+        { text: 'CANCELAR', style: 'cancel' },
         {
-          text: 'Eliminar',
+          text: 'ELIMINAR',
           style: 'destructive',
           onPress: async () => {
             try {
               await apiService.deleteProducto(producto.id);
               loadProductos();
             } catch (error) {
-              Alert.alert('Error', 'No se pudo eliminar el producto');
+              Alert.alert('ERROR', 'No se pudo eliminar');
             }
           },
         },
@@ -116,17 +116,21 @@ export default function InventarioScreen({ navigation }: InventarioScreenProps) 
   };
 
   const getStockColor = (cantidad: number) => {
-    if (cantidad === 0) return '#f44336';
-    if (cantidad < 10) return '#ff9800';
-    return '#4CAF50';
+    if (cantidad === 0) return '#ff073a';
+    if (cantidad < 10) return '#ff00ff';
+    return '#39ff14';
   };
 
   const renderItem = ({ item }: { item: Producto }) => (
     <Surface style={styles.productItem} elevation={1}>
       <View style={styles.productInfo}>
         <Text style={styles.productName}>{item.nombre}</Text>
-        <Text style={styles.productCode}>{item.codigo_barra}</Text>
-        {item.categoria && <Text style={styles.productCategory}>{item.categoria}</Text>}
+        <Text style={styles.productCode}>⎔ {item.codigo_barra}</Text>
+        {item.categoria && (
+          <View style={styles.categoryTag}>
+            <Text style={styles.categoryText}>{item.categoria}</Text>
+          </View>
+        )}
       </View>
       <View style={styles.productActions}>
         <View style={styles.productStats}>
@@ -142,24 +146,13 @@ export default function InventarioScreen({ navigation }: InventarioScreenProps) 
           visible={menuVisible === item.id}
           onDismiss={() => setMenuVisible(null)}
           anchor={
-            <IconButton
-              icon="dots-vertical"
-              onPress={() => setMenuVisible(item.id)}
-            />
+            <IconButton icon="dots-vertical" iconColor="#00f0ff" onPress={() => setMenuVisible(item.id)} />
           }
+          contentStyle={{ backgroundColor: '#12121a' }}
         >
-          <Menu.Item
-            onPress={() => handleEdit(item)}
-            title="Editar"
-            leadingIcon="pencil"
-          />
-          <Divider />
-          <Menu.Item
-            onPress={() => handleDelete(item)}
-            title="Eliminar"
-            leadingIcon="delete"
-            titleStyle={{ color: '#f44336' }}
-          />
+          <Menu.Item onPress={() => handleEdit(item)} title="Editar" titleStyle={{ color: '#00f0ff' }} leadingIcon="pencil" iconColor="#00f0ff" />
+          <Divider style={{ backgroundColor: '#333' }} />
+          <Menu.Item onPress={() => handleDelete(item)} title="Eliminar" titleStyle={{ color: '#ff073a' }} leadingIcon="delete" iconColor="#ff073a" />
         </Menu>
       </View>
     </Surface>
@@ -167,93 +160,42 @@ export default function InventarioScreen({ navigation }: InventarioScreenProps) 
 
   return (
     <View style={styles.container}>
-      <Surface style={styles.header} elevation={2}>
-        <Text style={styles.headerTitle}>Inventario</Text>
-        <Text style={styles.headerSubtitle}>{productos.length} productos</Text>
-      </Surface>
+      <StatusBar barStyle="light-content" backgroundColor="#0a0a0f" />
+      <LinearGradient colors={['#0a0a0f', '#1a0a2e']} style={styles.headerGradient}>
+        <Surface style={styles.header} elevation={0}>
+          <View>
+            <Text style={styles.headerTitle}>◈ INVENTARIO</Text>
+            <Text style={styles.headerSubtitle}>┌ {productos.length} productos</Text>
+          </View>
+        </Surface>
+      </LinearGradient>
 
-      <Searchbar
-        placeholder="Buscar producto..."
-        onChangeText={setSearchQuery}
-        value={searchQuery}
-        style={styles.searchbar}
-      />
+      <Searchbar placeholder="Buscar producto..." onChangeText={setSearchQuery} value={searchQuery} style={styles.searchbar} inputStyle={{ color: '#e0e0e0' }} iconColor="#00f0ff" />
 
       <FlatList
         data={filteredProductos}
         renderItem={renderItem}
         keyExtractor={(item) => item.id.toString()}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-        }
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor="#00f0ff" />}
         contentContainerStyle={styles.list}
-        ListEmptyComponent={
-          <View style={styles.empty}>
-            <Text>No hay productos</Text>
-          </View>
-        }
+        ListEmptyComponent={<View style={styles.empty}><Text style={styles.emptyText}>◈ SIN PRODUCTOS</Text></View>}
       />
 
-      <FAB
-        icon="plus"
-        style={styles.fab}
-        onPress={() => navigation.navigate('NuevoProducto')}
-      />
+      <FAB icon="plus" style={styles.fab} onPress={() => navigation.navigate('NuevoProducto')} color="#000000" />
 
       <Portal>
-        <Modal
-          visible={editModalVisible}
-          onDismiss={() => setEditModalVisible(false)}
-          contentContainerStyle={styles.modal}
-        >
-          <Text style={styles.modalTitle}>Editar Producto</Text>
-          <TextInput
-            label="Nombre"
-            value={editForm.nombre}
-            onChangeText={(text) => setEditForm({ ...editForm, nombre: text })}
-            mode="outlined"
-            style={styles.input}
-          />
-          <TextInput
-            label="Descripción"
-            value={editForm.descripcion}
-            onChangeText={(text) => setEditForm({ ...editForm, descripcion: text })}
-            mode="outlined"
-            style={styles.input}
-          />
+        <Modal visible={editModalVisible} onDismiss={() => setEditModalVisible(false)} contentContainerStyle={styles.modal}>
+          <Text style={styles.modalTitle}>// EDITAR PRODUCTO</Text>
+          <TextInput label="Nombre" value={editForm.nombre} onChangeText={(text) => setEditForm({ ...editForm, nombre: text })} mode="outlined" style={styles.input} outlineColor="#00f0ff" activeOutlineColor="#00f0ff" textColor="#e0e0e0" />
+          <TextInput label="Descripción" value={editForm.descripcion} onChangeText={(text) => setEditForm({ ...editForm, descripcion: text })} mode="outlined" style={styles.input} outlineColor="#00f0ff" activeOutlineColor="#00f0ff" textColor="#e0e0e0" />
           <View style={styles.row}>
-            <TextInput
-              label="Precio"
-              value={editForm.precio}
-              onChangeText={(text) => setEditForm({ ...editForm, precio: text })}
-              mode="outlined"
-              keyboardType="numeric"
-              style={[styles.input, styles.halfInput]}
-              left={<TextInput.Affix text="$" />}
-            />
-            <TextInput
-              label="Cantidad"
-              value={editForm.cantidad}
-              onChangeText={(text) => setEditForm({ ...editForm, cantidad: text })}
-              mode="outlined"
-              keyboardType="numeric"
-              style={[styles.input, styles.halfInput]}
-            />
+            <TextInput label="Precio" value={editForm.precio} onChangeText={(text) => setEditForm({ ...editForm, precio: text })} mode="outlined" keyboardType="numeric" style={[styles.input, styles.halfInput]} outlineColor="#00f0ff" activeOutlineColor="#00f0ff" textColor="#e0e0e0" left={<TextInput.Affix text="$" color="#00f0ff" />} />
+            <TextInput label="Cantidad" value={editForm.cantidad} onChangeText={(text) => setEditForm({ ...editForm, cantidad: text })} mode="outlined" keyboardType="numeric" style={[styles.input, styles.halfInput]} outlineColor="#00f0ff" activeOutlineColor="#00f0ff" textColor="#e0e0e0" />
           </View>
-          <TextInput
-            label="Categoría"
-            value={editForm.categoria}
-            onChangeText={(text) => setEditForm({ ...editForm, categoria: text })}
-            mode="outlined"
-            style={styles.input}
-          />
+          <TextInput label="Categoría" value={editForm.categoria} onChangeText={(text) => setEditForm({ ...editForm, categoria: text })} mode="outlined" style={styles.input} outlineColor="#00f0ff" activeOutlineColor="#00f0ff" textColor="#e0e0e0" />
           <View style={styles.modalActions}>
-            <Button mode="outlined" onPress={() => setEditModalVisible(false)}>
-              Cancelar
-            </Button>
-            <Button mode="contained" onPress={handleSaveEdit}>
-              Guardar
-            </Button>
+            <Button mode="outlined" onPress={() => setEditModalVisible(false)} textColor="#ff00ff">CANCELAR</Button>
+            <Button mode="contained" onPress={handleSaveEdit} buttonColor="#00f0ff" textColor="#000000">GUARDAR</Button>
           </View>
         </Modal>
       </Portal>
@@ -262,118 +204,32 @@ export default function InventarioScreen({ navigation }: InventarioScreenProps) 
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
-  header: {
-    padding: 16,
-    backgroundColor: '#fff',
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-  },
-  headerSubtitle: {
-    fontSize: 14,
-    color: '#666',
-  },
-  searchbar: {
-    margin: 16,
-    marginBottom: 0,
-  },
-  list: {
-    padding: 16,
-  },
-  productItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    padding: 16,
-    marginBottom: 8,
-    borderRadius: 8,
-    backgroundColor: '#fff',
-  },
-  productInfo: {
-    flex: 1,
-  },
-  productName: {
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  productCode: {
-    fontSize: 12,
-    color: '#999',
-  },
-  productCategory: {
-    fontSize: 12,
-    color: '#2196F3',
-    marginTop: 4,
-  },
-  productActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  productStats: {
-    alignItems: 'flex-end',
-    marginRight: 8,
-  },
-  productPrice: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#2196F3',
-  },
-  stockContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 4,
-  },
-  stockDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginRight: 4,
-  },
-  productStock: {
-    fontSize: 12,
-  },
-  fab: {
-    position: 'absolute',
-    margin: 16,
-    right: 0,
-    bottom: 0,
-    backgroundColor: '#2196F3',
-  },
-  empty: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 40,
-  },
-  modal: {
-    backgroundColor: '#fff',
-    padding: 20,
-    margin: 20,
-    borderRadius: 8,
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 16,
-  },
-  input: {
-    marginBottom: 12,
-  },
-  row: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  halfInput: {
-    flex: 1,
-  },
-  modalActions: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    gap: 12,
-    marginTop: 16,
-  },
+  container: { flex: 1, backgroundColor: '#0a0a0f' },
+  headerGradient: { paddingTop: 10 },
+  header: { padding: 16, backgroundColor: 'transparent' },
+  headerTitle: { fontSize: 24, fontWeight: 'bold', color: '#00f0ff', letterSpacing: 4 },
+  headerSubtitle: { fontSize: 12, color: '#8888aa', marginTop: 4 },
+  searchbar: { margin: 16, marginBottom: 0, backgroundColor: '#12121a', borderWidth: 1, borderColor: '#1a1a25' },
+  list: { padding: 16 },
+  productItem: { flexDirection: 'row', justifyContent: 'space-between', padding: 16, marginBottom: 8, borderRadius: 8, backgroundColor: '#12121a', borderWidth: 1, borderColor: '#1a1a25' },
+  productInfo: { flex: 1 },
+  productName: { fontSize: 16, fontWeight: '500', color: '#e0e0e0' },
+  productCode: { fontSize: 12, color: '#8888aa', marginTop: 4 },
+  categoryTag: { backgroundColor: 'rgba(255, 0, 255, 0.2)', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4, alignSelf: 'flex-start', marginTop: 8, borderWidth: 1, borderColor: '#ff00ff' },
+  categoryText: { fontSize: 10, color: '#ff00ff', letterSpacing: 1 },
+  productActions: { flexDirection: 'row', alignItems: 'center' },
+  productStats: { alignItems: 'flex-end', marginRight: 8 },
+  productPrice: { fontSize: 18, fontWeight: 'bold', color: '#00f0ff' },
+  stockContainer: { flexDirection: 'row', alignItems: 'center', marginTop: 4 },
+  stockDot: { width: 8, height: 8, borderRadius: 4, marginRight: 6 },
+  productStock: { fontSize: 12, fontWeight: 'bold' },
+  fab: { position: 'absolute', margin: 16, right: 0, bottom: 0, backgroundColor: '#00f0ff' },
+  empty: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 40 },
+  emptyText: { color: '#8888aa', fontSize: 16, letterSpacing: 4 },
+  modal: { backgroundColor: '#12121a', padding: 20, margin: 20, borderRadius: 12, borderWidth: 1, borderColor: '#00f0ff' },
+  modalTitle: { fontSize: 18, fontWeight: 'bold', color: '#00f0ff', marginBottom: 16, letterSpacing: 2 },
+  input: { marginBottom: 12, backgroundColor: '#0a0a0f' },
+  row: { flexDirection: 'row', gap: 12 },
+  halfInput: { flex: 1 },
+  modalActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 12, marginTop: 16 },
 });
